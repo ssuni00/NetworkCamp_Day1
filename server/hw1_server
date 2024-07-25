@@ -83,12 +83,6 @@ int main(int argc, char *argv[])
     }
     closedir(dir);
 
-    serv_sd = socket(PF_INET, SOCK_STREAM, 0);
-    if (serv_sd == -1)
-    {
-        error_handling("socket() error");
-    }
-
     int opt = 1;
     setsockopt(serv_sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -147,6 +141,11 @@ int main(int argc, char *argv[])
                 continue;
             }
 
+            // 파일 크기 전송
+            unsigned int file_length = file_info[file_num - 1].fileLength;
+            write(clnt_sd, &file_length, sizeof(file_length));
+
+            // 파일 데이터 전송
             while ((read_cnt = fread(buf, 1, BUF_SIZE, fp)) > 0)
             {
                 write(clnt_sd, buf, read_cnt);
