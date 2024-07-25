@@ -51,15 +51,24 @@ int main(int argc, char *argv[])
     }
 
     // 서버로부터 파일 목록 읽기
+    // file 갯수부터 읽기
     read_cnt = read(sd, &file_count, sizeof(int));
+    // file 갯수가 0이면 실패했다는 거니까
     if (read_cnt <= 0)
     {
         error_handling("Failed to receive file count");
     }
-    read_cnt = read(sd, file_info, sizeof(struct fileInfo) * file_count);
-    if (read_cnt <= 0)
+    // file 갯수가 잘 들어왔으면
+    else
     {
-        error_handling("Failed to receive file information");
+        for (int i = 0; i < file_count; i++)
+        {
+            read_cnt = read(sd, &file_info[i], sizeof(struct fileInfo));
+            if (read_cnt <= 0)
+            {
+                error_handling("Failed to receive file information");
+            }
+        }
     }
 
     // 서버의 파일목록을 반복문으로 출력
@@ -102,16 +111,22 @@ int main(int argc, char *argv[])
                 break;
             }
 
+            // 파일 크기 받기
+            unsigned int file_length;
+            read(sd, &file_length, sizeof(file_length));
+
             // 파일 데이터 받아와서 클라이언트 서버에 쓰기
-            while ((read_cnt = read(sd, buf, BUF_SIZE)) > 0)
+            unsigned int received_len = 0;
+            while (received_len < file_length)
             {
-                fwrite((void *)buf, 1, read_cnt, fp);
-                if (read_cnt < BUF_SIZE)
+                read_cnt = read(sd, buf, BUF_SIZE);
+                if (read_cnt <= 0)
                 {
                     break;
                 }
+                fwrite(buf, 1, read_cnt, fp);
+                received_len += read_cnt;
             }
-
             fclose(fp);
             printf("Received file: %s\n", file_name);
         }
